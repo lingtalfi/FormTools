@@ -1,0 +1,256 @@
+<?php
+
+
+namespace FormTools\Validation;
+
+use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
+
+
+/**
+ * 2017-05-28
+ *
+ * When I have time, I like to use a form model to handle my forms.
+ * (https://github.com/lingtalfi/formmodel)
+ *
+ * However, this requires to create a renderer object, which can be very cumbersome
+ * and time consuming imo.
+ *
+ * Sometimes, you just have a nice template, and you just want to quickly inject
+ * your form logic in that template, and not the other way around.
+ *
+ * In other words, you don't create a renderer which is an adaptor between your model
+ * and the target template, but rather, you start from the template and create only
+ * the model variables you need.
+ *
+ * I noticed that if form models are the way I like form in a back-office (with lot of
+ * auto-generated forms), in the front however, I prefer to use the on-the-fly technique,
+ * which is an old one but pragmatic, maybe the simplest to understand.
+ * Probably because front forms have a well defined set of fields we can agree on,
+ * which is not the case in the case of an auto-generated admin where we don't know
+ * the fields by advance.
+ *
+ *
+ *
+ *
+ * The model of the on-the-fly form uses prefixes to organize the data.
+ * Here is a typical on-the-fly form model:
+ *
+ * - formAction => "",
+ * - formMethod => "post",
+ * - nameEmail => "email",
+ * - namePass => "pass",
+ * - namePass2 => "pass2",
+ * - nameKey => "key",
+ * - nameNewsletter => "newsletter",
+ * - valueEmail => "",
+ * - valuePass => "",
+ * - valuePass2 => "",
+ * - valueKey => $key,
+ * - checkedNewsletter => "",
+ * - errorEmail => "",
+ * - errorPass => "",
+ * - errorPass2" => "",
+ *
+ *
+ * As you can guess, we have the following prefixes:
+ *
+ * - name: indicate the html name to use
+ * - value: indicate the html value to use.
+ *          For a unique checkbox, use the checked prefix instead
+ * - checked: this is only for checkbox
+ *          for checkbox, the value is either an empty string, or the "checked" string
+ *          that we can directly inject in the html.
+ * - error: indicate the error message to display (only one, not an array of messages,
+ *           because the philosophy is to alleviate the template author's work, so just
+ *           a string is a no brainer for a template author, whereas a hybrid string|array
+ *           field forces the template author to make one more if in her template, multiply
+ *           this by the number of fields and you should understand why we keep it to just
+ *           a string)
+ *
+ *
+ * So that's it!
+ * Very intuitive, straight to the point.
+ * The template author is a happy guy, because he can just do whatever he wants,
+ * the on-the-fly model is very light and integrates very well with ANY (and I really mean ANY)
+ * form design.
+ *
+ *
+ *
+ * HOWEVER
+ * ===================
+ * Now that we've seen the good parts of the on-the-fly form for the template author,
+ * let's see how we handle the form submit server side.
+ *
+ * Hmmm, back to the old school ways of handling a form I guess, we just have to do it by hand.
+ *
+ * In some degrees, it's good to write your forms validation/handling by hand,
+ * but sometimes, it's just too repetitive, and that's why this class is here.
+ *
+ * Basically, I was motivated to do the form validation by hand, but then the
+ * required validator, or even the email, those are so common, I couldn't stand doing
+ * it for every field, every time I have a front form to create.
+ *
+ * So, here are a few helper methods for you.
+ * Not too much, because as I said, it's good to type some code, because then you SEE
+ * exactly what's going on, but just enough that you can trigger an auto-validator routine
+ * for simple things like required fields, or email fields, those form validation patterns,
+ * as ancient as the web.
+ *
+ *
+ *
+ *
+ * This is not a static oriented class, so that you can override the validation messages
+ * being returned (this email is invalid, ...).
+ *
+ *
+ *
+ *
+ */
+class OnTheFlyFormValidator
+{
+
+    private $_argString;
+
+    public static function create()
+    {
+        return new static();
+    }
+
+    /**
+     *
+     * Test all fields validators, and returns whether all of them have passed or not.
+     * Also set the error messages in the model, using the error prefix.
+     *
+     *
+     *
+     *
+     * @param array $fields2Validator , array of field => validator
+     *
+     *              - field: string, name of the field: for instance email.
+     *                  It is expected that the value for this field is found in the
+     *                  model (for instance valueEmail).
+     *                  If not, the error method will be triggered, which by default throws
+     *                  an exception.
+     *
+     *              - validator: string|array, the validateIdentifier or array of validateIdentifier.
+     *                      The value will be tested against the identifier.
+     *                      The validation logic depends on the identifier.
+     *                      If one validator fails, the method returns false,
+     *                      and an error message is set for this field, using the error prefix
+     *                      (for instance errorEmail).
+     *
+     *
+     *                      The following validateIdentifiers are available:
+     *                          - required: check that the field exists and is not an empty string or an empty number (0).
+     *                          - email: check that the field has a valid email syntax
+     *                          - sameAs:$fieldName: check that the field has the same value as the field which name is $fieldName.
+     *                          - min:$nbChars: check that the field's length is more or equal to $nbChars characters (utf8)
+     *
+     *                      By the way, notice that we separate the validator identifier from its argument(s) with a colon.
+     *
+     *
+     *
+     *
+     * @param array $model , the on-the-fly form model, with the values already injected by $_POST (or $_GET).
+     *
+     * @return bool, whether or not all fields's validation passed
+     */
+    public function validate(array $fields2Validator, array &$model)
+    {
+        $allGood = true;
+        foreach ($fields2Validator as $field => $validators) {
+            if (!is_array($validators)) {
+                $validators = [$validators];
+            }
+
+            $key = "value" . ucfirst($field);
+
+            if (array_key_exists($key, $model)) {
+                $value = $model[$key];
+
+                foreach ($validators as $validator) {
+
+                    $p = explode(':', $validator, 2);
+                    $validator = $p[0];
+                    $argString = "";
+                    if (2 === count($p)) {
+                        $argString = $p[1];
+                    }
+                    $this->_argString = $argString;
+
+
+                    switch ($validator) {
+                        case 'required':
+                            if (empty($value)) {
+                                $this->addValidateError($field, "This field is required", $model);
+                                $allGood = false;
+                                break 2;
+                            }
+                            break;
+                        case 'email':
+                            if (false === FormValidatorTool::isEmail($value)) {
+                                $this->addValidateError($field, "This is not a valid email", $model);
+                                $allGood = false;
+                                break 2;
+                            }
+                            break;
+                        case 'sameAs':
+                            $targetKey = "value" . ucfirst($argString);
+                            if (false === array_key_exists($targetKey, $model) || $value !== $model[$targetKey]) {
+                                $this->addValidateError($field, "This value doesn't match the {field} value", $model);
+                                $allGood = false;
+                                break 2;
+                            }
+                            break;
+                        case 'min':
+                            $strlen = mb_strlen($value);
+                            if ($strlen < $argString) {
+                                $this->addValidateError($field, "This field must contain at least {argString} characters", $model);
+                                $allGood = false;
+                                break 2;
+                            }
+                            break;
+                        default:
+                            $this->error("Unknown validator: $validator");
+                            return false;
+                            break;
+                    }
+                }
+
+            } else {
+                $this->error("key not found in model: $key");
+                return false;
+            }
+        }
+        return $allGood;
+    }
+
+
+    //--------------------------------------------
+    //
+    //--------------------------------------------
+    protected function error($msg) // override me
+    {
+        throw new OnTheFlyFormValidatorException($msg);
+    }
+
+
+    protected function getErrorMessage($errorMsg, $field, array $model)// override me (translation?)
+    {
+        return $errorMsg;
+    }
+
+    //--------------------------------------------
+    //
+    //--------------------------------------------
+    private function addValidateError($field, $errorMsg, array &$model)
+    {
+        $key = "error" . ucfirst($field);
+        $abstractErrorMsg = $this->getErrorMessage($errorMsg, $field, $model);
+        $concreteErrorMsg = str_replace(['{field}', '{argString}'], [$field, $this->_argString], $abstractErrorMsg);
+        $model[$key] = $concreteErrorMsg;
+    }
+
+
+}
+
