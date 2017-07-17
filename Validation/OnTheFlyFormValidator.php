@@ -118,9 +118,11 @@ use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
  * Here is what you should to create a color control with three radio buttons: red, blue, green:
  *
  * - nameColor
+ * - valueColor: (choose the default value here)
  * - valueColor__Red: red
  * - valueColor__Blue: blue
  * - valueColor__Green: green
+ *
  * - checkedColor__Red:
  * - checkedColor__Blue:
  * - checkedColor__Green:
@@ -143,6 +145,18 @@ class OnTheFlyFormValidator
         return new static();
     }
 
+
+    public static function addBlankErrors(array &$model)
+    {
+        foreach ($model as $k => $v) {
+            if (0 === strpos($k, 'name')) {
+                $nameLabel = substr($k, 4);
+                if (false === strpos($nameLabel, '__')) {
+                    $model['error' . $nameLabel] = "";
+                }
+            }
+        }
+    }
 
     public static function wasPosted(array $model, array $userData)
     {
@@ -307,6 +321,16 @@ class OnTheFlyFormValidator
                                 break 2;
                             }
                             break;
+                        case 'exactLength':
+                            $strlen = mb_strlen($value);
+                            if ((int)$strlen !== (int)$argString) {
+                                $this->addValidateError($field, "This field must contain exactly {argString} characters, {currentLength} given", $model, [
+                                    'currentLength' => $strlen,
+                                ]);
+                                $allGood = false;
+                                break 2;
+                            }
+                            break;
                         default:
                             $this->error("Unknown validator: $validator");
                             return false;
@@ -359,11 +383,18 @@ class OnTheFlyFormValidator
     //--------------------------------------------
     //
     //--------------------------------------------
-    private function addValidateError($field, $errorMsg, array &$model)
+    private function addValidateError($field, $errorMsg, array &$model, array $extraTags = [])
     {
         $key = "error" . ucfirst($field);
         $abstractErrorMsg = $this->getErrorMessage($errorMsg, $field, $model);
         $concreteErrorMsg = str_replace(['{field}', '{argString}'], [$field, $this->_argString], $abstractErrorMsg);
+
+        $keys = array_keys($extraTags);
+        $keys = array_map(function ($v) {
+            return '{' . $v . '}';
+        }, $keys);
+
+        $concreteErrorMsg = str_replace($keys, array_values($extraTags), $concreteErrorMsg);
         $model[$key] = $concreteErrorMsg;
         $model['_formErrors'][] = $field . ": " . $concreteErrorMsg;
     }

@@ -80,6 +80,14 @@ if (array_key_exists($model['nameKey'], $_POST) && $key === $_POST[$model['nameK
 History Log
 ------------------
     
+- 1.4.0 -- 2017-07-17
+
+    - add OnTheFlyFormValidator::addBlankErrors
+    
+- 1.3.0 -- 2017-07-17
+
+    - OnTheFlyFormValidator::validate add exactLength validation rule
+    
 - 1.2.0 -- 2017-07-17
 
     - OnTheFlyFormValidator::validate now returns formErrors and _formErrors
