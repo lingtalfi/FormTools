@@ -52,6 +52,7 @@ use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
  * - errorPass2" => "",
  *
  *
+ *
  * As you can guess, we have the following prefixes:
  *
  * - name: indicate the html name to use
@@ -73,6 +74,9 @@ use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
  * The template author is a happy guy, because he can just do whatever he wants,
  * the on-the-fly model is very light and integrates very well with ANY (and I really mean ANY)
  * form design.
+ *
+ *
+ *
  *
  *
  *
@@ -105,6 +109,29 @@ use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
  *
  *
  *
+ *
+ * Going further
+ * ======================
+ * Radio buttons
+ *
+ * If you have radio buttons, generally you have only two or three items, each having its own value.
+ * Here is what you should to create a color control with three radio buttons: red, blue, green:
+ *
+ * - nameColor
+ * - valueColor__Red: red
+ * - valueColor__Blue: blue
+ * - valueColor__Green: green
+ * - checkedColor__Red:
+ * - checkedColor__Blue:
+ * - checkedColor__Green:
+ *
+ * Note that the value are fixed for the "value" prefixed fields (valueColor__Red, valueColor__Green, valueColor__Blue).
+ * You put a double underscore between the value, and a value identifier representing the input value.
+ *
+ *
+ *
+ *
+ *
  */
 class OnTheFlyFormValidator
 {
@@ -115,6 +142,70 @@ class OnTheFlyFormValidator
     {
         return new static();
     }
+
+
+    public static function wasPosted(array $model, array $userData)
+    {
+        return array_key_exists($model['nameKey'], $userData) && $model['valueKey'] === $userData[$model['nameKey']];
+    }
+
+
+    /**
+     * If your model follows strictly the naming convention described above,
+     * this method will fill automatically the "value" prefixed fields, and "checked" prefixed fields.
+     *
+     */
+    public static function infuse(array &$model, array $userData)
+    {
+        foreach ($model as $k => $v) {
+            if (0 === strpos($k, 'name')) {
+                $nameLabel = substr($k, 4);
+
+                // inject value
+                $valueKey = "value" . $nameLabel;
+                if (
+                    array_key_exists($valueKey, $model) &&
+                    array_key_exists($v, $userData)
+                ) {
+                    $model[$valueKey] = $userData[$v];
+                }
+
+                // inject single checkboxes
+                $checkedKey = "checked" . $nameLabel;
+                if (
+                array_key_exists($checkedKey, $model)
+                ) {
+                    if (array_key_exists($v, $userData)) {
+                        $model[$checkedKey] = 'checked';
+                    } else {
+                        $model[$checkedKey] = "";
+                    }
+                }
+            } // multiple radio boxes
+            elseif (0 === strpos($k, 'checked')) {
+                $checkedLabel = substr($k, 7);
+                if (false !== ($pos = strpos($checkedLabel, '__'))) {
+
+                    $prefix = substr($checkedLabel, 0, $pos);
+                    $valueKey = "value" . $checkedLabel;
+                    $nameKey = "name" . $prefix;
+
+                    if (
+                        array_key_exists($nameKey, $model) &&
+                        array_key_exists($valueKey, $model) &&
+                        array_key_exists($model[$nameKey], $userData)
+                    ) {
+                        if ($model[$valueKey] === $userData[$model[$nameKey]]) {
+                            $model[$k] = 'checked';
+                        } else {
+                            $model[$k] = '';
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     /**
      *
