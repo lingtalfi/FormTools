@@ -80,6 +80,10 @@ if (array_key_exists($model['nameKey'], $_POST) && $key === $_POST[$model['nameK
 History Log
 ------------------
     
+- 1.2.0 -- 2017-07-17
+
+    - OnTheFlyFormValidator::validate now returns formErrors and _formErrors
+    
 - 1.1.0 -- 2017-07-17
 
     - add OnTheFlyFormValidator::wasPosted method

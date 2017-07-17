@@ -213,6 +213,11 @@ class OnTheFlyFormValidator
      * Also set the error messages in the model, using the error prefix.
      *
      *
+     * Will add two extra properties:
+     *
+     * - _formErrors: an array of form errors
+     * - formErrors: the html version of the _formErrors array
+     *
      *
      *
      * @param array $fields2Validator , array of field => validator
@@ -249,6 +254,9 @@ class OnTheFlyFormValidator
     public function validate(array $fields2Validator, array &$model)
     {
         $allGood = true;
+
+        $model['_formErrors'] = [];
+
         foreach ($fields2Validator as $field => $validators) {
             if (!is_array($validators)) {
                 $validators = [$validators];
@@ -268,8 +276,6 @@ class OnTheFlyFormValidator
                         $argString = $p[1];
                     }
                     $this->_argString = $argString;
-
-
                     switch ($validator) {
                         case 'required':
                             if (empty($value)) {
@@ -313,6 +319,10 @@ class OnTheFlyFormValidator
                 return false;
             }
         }
+
+
+        $model['formErrors'] = $this->getFormErrors($model['_formErrors']);
+
         return $allGood;
     }
 
@@ -331,6 +341,21 @@ class OnTheFlyFormValidator
         return $errorMsg;
     }
 
+
+    protected function getFormErrors(array $errors)
+    {
+        $s = '';
+        if (count($errors) > 0) {
+
+            $s .= '<ul class="otff-errors">';
+            foreach ($errors as $error) {
+                $s .= '<li>' . $error . '</li>';
+            }
+            $s .= '</ul>';
+        }
+        return $s;
+    }
+
     //--------------------------------------------
     //
     //--------------------------------------------
@@ -340,6 +365,7 @@ class OnTheFlyFormValidator
         $abstractErrorMsg = $this->getErrorMessage($errorMsg, $field, $model);
         $concreteErrorMsg = str_replace(['{field}', '{argString}'], [$field, $this->_argString], $abstractErrorMsg);
         $model[$key] = $concreteErrorMsg;
+        $model['_formErrors'][] = $field . ": " . $concreteErrorMsg;
     }
 
 
