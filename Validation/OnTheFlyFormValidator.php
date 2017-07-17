@@ -145,6 +145,34 @@ class OnTheFlyFormValidator
         return new static();
     }
 
+    public static function initModel(array &$model)
+    {
+        self::addBlankErrors($model);
+
+
+        // infuse default values to checkboxes
+        foreach ($model as $k => $v) {
+            if (
+                0 === strpos($k, 'value')
+            ) {
+                if (false !== ($pos = strpos($k, '__'))) {
+                    $label = substr($k, 5);
+//                    $rawKey = substr($label, 0, $pos);
+                    $rawKey = substr($k, 0, $pos);
+                    if (array_key_exists($rawKey, $model)) {
+                        $val = $model[$rawKey];
+                        if ($v === $val) {
+                            $checkedLabel = 'checked' . $label;
+                            if (array_key_exists($checkedLabel, $model)) {
+                                $model[$checkedLabel] = 'checked';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 
     public static function addBlankErrors(array &$model)
     {
