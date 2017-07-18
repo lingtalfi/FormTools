@@ -4,6 +4,8 @@
 namespace FormTools\Validation;
 
 use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
+use FormTools\Validation\Message\OnTheFlyFormValidatorMessageInterface;
+use Kamille\Services\XLog;
 
 
 /**
@@ -139,11 +141,19 @@ class OnTheFlyFormValidator
 {
 
     private $_argString;
+    private $validatorMessage;
 
     public static function create()
     {
         return new static();
     }
+
+    public function setMessage(OnTheFlyFormValidatorMessageInterface $message)
+    {
+        $this->validatorMessage = $message;
+        return $this;
+    }
+
 
     public static function initModel(array &$model)
     {
@@ -317,18 +327,20 @@ class OnTheFlyFormValidator
                     if (2 === count($p)) {
                         $argString = $p[1];
                     }
+
+
                     $this->_argString = $argString;
                     switch ($validator) {
                         case 'required':
                             if (empty($value)) {
-                                $this->addValidateError($field, "This field is required", $model);
+                                $this->addValidateError($field, "required", $model);
                                 $allGood = false;
                                 break 2;
                             }
                             break;
                         case 'email':
                             if (false === FormValidatorTool::isEmail($value)) {
-                                $this->addValidateError($field, "This is not a valid email", $model);
+                                $this->addValidateError($field, "email", $model);
                                 $allGood = false;
                                 break 2;
                             }
@@ -336,7 +348,7 @@ class OnTheFlyFormValidator
                         case 'sameAs':
                             $targetKey = "value" . ucfirst($argString);
                             if (false === array_key_exists($targetKey, $model) || $value !== $model[$targetKey]) {
-                                $this->addValidateError($field, "This value doesn't match the {field} value", $model);
+                                $this->addValidateError($field, "match", $model);
                                 $allGood = false;
                                 break 2;
                             }
@@ -344,7 +356,7 @@ class OnTheFlyFormValidator
                         case 'min':
                             $strlen = mb_strlen($value);
                             if ($strlen < $argString) {
-                                $this->addValidateError($field, "This field must contain at least {argString} characters", $model);
+                                $this->addValidateError($field, "minLength", $model);
                                 $allGood = false;
                                 break 2;
                             }
@@ -352,7 +364,7 @@ class OnTheFlyFormValidator
                         case 'exactLength':
                             $strlen = mb_strlen($value);
                             if ((int)$strlen !== (int)$argString) {
-                                $this->addValidateError($field, "This field must contain exactly {argString} characters, {currentLength} given", $model, [
+                                $this->addValidateError($field, "exactLength", $model, [
                                     'currentLength' => $strlen,
                                 ]);
                                 $allGood = false;
@@ -411,9 +423,26 @@ class OnTheFlyFormValidator
     //--------------------------------------------
     //
     //--------------------------------------------
-    private function addValidateError($field, $errorMsg, array &$model, array $extraTags = [])
+    private function addValidateError($field, $errorCode, array &$model, array $extraTags = [])
     {
         $key = "error" . ucfirst($field);
+
+
+        $map = [
+            "required" => "This field is required",
+            "email" => "This is not a valid email",
+            "match" => "This value doesn't match the {field} value",
+            "minLength" => "This field must contain at least {argString} characters",
+            "exactLength" => "This field must contain exactly {argString} characters, {currentLength} given",
+        ];
+
+        if ($this->validatorMessage instanceof OnTheFlyFormValidatorMessageInterface) {
+            $this->validatorMessage->remap($map);
+        }
+
+        $errorMsg = $map[$errorCode];
+
+
         $abstractErrorMsg = $this->getErrorMessage($errorMsg, $field, $model);
         $concreteErrorMsg = str_replace(['{field}', '{argString}'], [$field, $this->_argString], $abstractErrorMsg);
 
