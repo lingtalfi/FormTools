@@ -80,6 +80,10 @@ if (array_key_exists($model['nameKey'], $_POST) && $key === $_POST[$model['nameK
 History Log
 ------------------
     
+- 1.7.0 -- 2017-07-22
+
+    - add Rendering and Modeling tools
+    
 - 1.6.0 -- 2017-07-18
 
     - add OnTheFlyFormValidatorMessageInterface
