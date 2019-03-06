@@ -1,10 +1,10 @@
 <?php
 
 
-namespace FormTools\Model;
+namespace Ling\FormTools\Model;
 
 
-use FormTools\Exception\FormToolsException;
+use Ling\FormTools\Exception\FormToolsException;
 
 class ModelGeneratorHelper
 {

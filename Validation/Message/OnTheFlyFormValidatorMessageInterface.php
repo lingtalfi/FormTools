@@ -1,7 +1,7 @@
 <?php
 
 
-namespace FormTools\Validation\Message;
+namespace Ling\FormTools\Validation\Message;
 
 
 interface OnTheFlyFormValidatorMessageInterface

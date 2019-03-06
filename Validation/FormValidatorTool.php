@@ -1,7 +1,7 @@
 <?php
 
 
-namespace FormTools\Validation;
+namespace Ling\FormTools\Validation;
 
 
 class FormValidatorTool

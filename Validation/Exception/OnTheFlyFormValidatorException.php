@@ -1,7 +1,7 @@
 <?php
 
 
-namespace FormTools\Validation\Exception;
+namespace Ling\FormTools\Validation\Exception;
 
 class OnTheFlyFormValidatorException extends \Exception
 {

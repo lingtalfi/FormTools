@@ -3,7 +3,7 @@
 //--------------------------------------------
 // EXAMPLE OF SYNTAX
 //--------------------------------------------
-use FormTools\Validation\OnTheFlyFormValidator;
+use Ling\FormTools\Validation\OnTheFlyFormValidator;
 
 $key = "Ekom_Front_CreateAccountController_render";
 $model = [

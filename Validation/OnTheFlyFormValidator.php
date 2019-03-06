@@ -1,10 +1,10 @@
 <?php
 
 
-namespace FormTools\Validation;
+namespace Ling\FormTools\Validation;
 
-use FormTools\Validation\Exception\OnTheFlyFormValidatorException;
-use FormTools\Validation\Message\OnTheFlyFormValidatorMessageInterface;
+use Ling\FormTools\Validation\Exception\OnTheFlyFormValidatorException;
+use Ling\FormTools\Validation\Message\OnTheFlyFormValidatorMessageInterface;
 use Kamille\Services\XLog;
 
 

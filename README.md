@@ -14,7 +14,7 @@ Install
 ==========
 Using the [uni](https://github.com/lingtalfi/universe-naive-importer) command.
 ```bash
-uni import FormTools
+uni import Ling/FormTools
 ```
 
 Or just download it and place it where you want otherwise.
@@ -30,7 +30,7 @@ How to
 //--------------------------------------------
 // EXAMPLE FOR THE SYNTAX 
 //--------------------------------------------
-use FormTools\Validation\OnTheFlyFormValidator;
+use Ling\FormTools\Validation\OnTheFlyFormValidator;
 
 $key = "Ekom_Front_CreateAccountController_render";
 $model = [

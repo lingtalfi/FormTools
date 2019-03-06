@@ -1,7 +1,7 @@
 <?php
 
 
-namespace FormTools\Exception;
+namespace Ling\FormTools\Exception;
 
 
 class FormToolsException extends \Exception

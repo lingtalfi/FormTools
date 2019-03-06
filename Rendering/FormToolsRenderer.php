@@ -1,7 +1,7 @@
 <?php
 
 
-namespace FormTools\Rendering;
+namespace Ling\FormTools\Rendering;
 
 
 class FormToolsRenderer
